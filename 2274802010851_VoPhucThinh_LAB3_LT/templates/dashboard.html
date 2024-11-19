@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý Sinh viên</title>
+</head>
+
+<center>
+
+    <body>
+        <h2>Danh sách Sinh viên</h2>
+
+        <!-- Form để thêm sinh viên -->
+        <form id="studentForm">
+            <table>
+                <tr>
+                    <td><label for="name">Tên:</label></td>
+                    <td><input type="text" id="name" name="name" required></td>
+                </tr>
+                <tr>
+                    <td><label for="age">Tuổi:</label></td>
+                    <td><input type="number" id="age" name="age" required></td>
+                </tr>
+                <tr>
+                    <td><label for="gender">Giới tính:</label></td>
+                    <td><input type="text" id="gender" name="gender" required></td>
+                </tr>
+                <tr>
+                    <td><label for="major">Ngành học:</label></td>
+                    <td><input type="text" id="major" name="major" required></td>
+                </tr>
+            </table>
+            <button type="button" onclick="addStudent()">Thêm sinh viên</button>
+        </form>
+
+        <!-- Bảng hiển thị danh sách sinh viên -->
+        <table border="1" id="studentTable">
+            <tr>
+                <th>ID</th>
+                <th>Tên</th>
+                <th>Tuổi</th>
+                <th>Giới tính</th>
+                <th>Ngành</th>
+                <th>Hành động</th>
+            </tr>
+            {% for student in students %}
+            <tr id="student-{{ student[0] }}">
+                <td>{{ student[0] }}</td>
+                <td>{{ student[1] }}</td>
+                <td>{{ student[2] }}</td>
+                <td>{{ student[3] }}</td>
+                <td>{{ student[4] }}</td>
+                <td>
+                    <button
+                        onclick="editStudent({{ student[0] }}, '{{ student[1] }}', {{ student[2] }}, '{{ student[3] }}', '{{ student[4] }}')">Chỉnh
+                        sửa</button>
+                    <button onclick="deleteStudent({{ student[0] }})">Xóa</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <!-- Form chỉnh sửa sinh viên -->
+        <div id="editFormContainer" style="display:none;">
+            <h3>Chỉnh sửa thông tin sinh viên</h3>
+            <form id="editForm">
+                <table>
+                    <tr>
+                        <td><label for="editName">Tên:</label></td>
+                        <td><input type="text" id="editName" required></td>
+                    </tr>
+                    <tr>
+                        <td><label for="editAge">Tuổi:</label></td>
+                        <td><input type="number" id="editAge" required></td>
+                    </tr>
+                    <tr>
+                        <td><label for="editGender">Giới tính:</label></td>
+                        <td><input type="text" id="editGender" required></td>
+                    </tr>
+                    <tr>
+                        <td><label for="editMajor">Ngành:</label></td>
+                        <td><input type="text" id="editMajor" required></td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="text-align: center;">
+                            <button type="button" onclick="updateStudent()">Cập nhật</button>
+                            <button type="button" onclick="cancelEdit()">Hủy</button>
+                        </td>
+                    </tr>
+                </table>
+                <input type="hidden" id="editId">
+            </form>
+
+        </div>
+
+        <script>
+            function editStudent(id, name, age, gender, major) {
+                document.getElementById("editFormContainer").style.display = "block";
+                document.getElementById("editId").value = id;
+                document.getElementById("editName").value = name;
+                document.getElementById("editAge").value = age;
+                document.getElementById("editGender").value = gender;
+                document.getElementById("editMajor").value = major;
+            }
+
+            function cancelEdit() {
+                document.getElementById("editFormContainer").style.display = "none";
+            }
+
+            function updateStudent() {
+                const id = document.getElementById("editId").value;
+                const name = document.getElementById("editName").value;
+                const age = document.getElementById("editAge").value;
+                const gender = document.getElementById("editGender").value;
+                const major = document.getElementById("editMajor").value;
+
+                fetch(`/update_student/${id}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                    },
+                    body: `name=${name}&age=${age}&gender=${gender}&major=${major}`,
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const row = document.getElementById(`student-${id}`);
+                            row.children[1].textContent = name;
+                            row.children[2].textContent = age;
+                            row.children[3].textContent = gender;
+                            row.children[4].textContent = major;
+                            cancelEdit();
+                        } else {
+                            alert("Lỗi khi cập nhật thông tin.");
+                        }
+                    })
+                    .catch(error => console.error("Lỗi:", error));
+            }
+        </script>
+
+
+        <script>
+            function deleteStudent(id) {
+                if (confirm("Bạn có chắc chắn muốn xóa sinh viên này không?")) {
+                    fetch(`/delete_student/${id}`, {
+                        method: "DELETE",
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                document.getElementById(`student-${id}`).remove();
+                            } else {
+                                alert("Lỗi khi xóa sinh viên.");
+                            }
+                        })
+                        .catch(error => console.error("Lỗi:", error));
+                }
+            }
+        </script>
+
+
+        <!-- Thêm JavaScript để xử lý AJAX -->
+        <script>
+            function addStudent() {
+                const name = document.getElementById("name").value;
+                const age = document.getElementById("age").value;
+                const gender = document.getElementById("gender").value;
+                const major = document.getElementById("major").value;
+
+                fetch("/add_student", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                    },
+                    body: `name=${name}&age=${age}&gender=${gender}&major=${major}`,
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Thêm sinh viên mới vào bảng hiển thị mà không tải lại trang
+                        const table = document.getElementById("studentTable");
+                        const newRow = table.insertRow();
+
+                        newRow.innerHTML = `
+                    <td>${data.id}</td>
+                    <td>${data.name}</td>
+                    <td>${data.age}</td>
+                    <td>${data.gender}</td>
+                    <td>${data.major}</td>
+                `;
+
+                        // Xóa nội dung form sau khi thêm thành công
+                        document.getElementById("studentForm").reset();
+                    })
+                    .catch(error => console.error("Lỗi:", error));
+            }
+        </script>
+    </body>
+</center>
+
+</html>
